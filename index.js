@@ -77,6 +77,22 @@ async function run() {
             }
         })
 
+        const medicineCollection = client.db('medzone').collection('medicine');
+
+
+        //This is the api for the banner and other components
+
+        app.get('/medicine', async (req, res) => {
+            try {
+                const featuredMedicines = await medicineCollection.find().toArray();
+                res.send(featuredMedicines);
+            } catch (error) {
+                console.error("Error fetching featured medicines:", error);
+                res.status(500).json({ error: "Internal server error" });
+            }
+        });
+
+
         // Send a ping to confirm a successful connection
         await client.db('admin').command({ ping: 1 })
         console.log(

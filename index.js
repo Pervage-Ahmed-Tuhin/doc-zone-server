@@ -78,6 +78,7 @@ async function run() {
         })
 
         const medicineCollection = client.db('medzone').collection('medicine');
+        const medicineCategory = client.db('medzone').collection('category');
 
 
         //This is the api for the banner and other components
@@ -91,6 +92,36 @@ async function run() {
                 res.status(500).json({ error: "Internal server error" });
             }
         });
+
+        // getting individual category
+
+        app.get('/category', async (req, res) => {
+
+            try {
+                const result = await medicineCategory.find().toArray();
+                res.send(result);
+            } catch (error) {
+                console.error("Error fetching featured medicines:", error);
+                res.status(500).json({ error: "Internal server error" });
+            }
+
+        })
+
+        app.get('/allMedicines',async (req,res)=>{
+            const page = parseInt(req.query.page);
+            const size = parseInt(req.query.size);
+
+            const result = await medicineCollection.find()
+            .skip(page * size)
+            .limit(size)
+            .toArray();
+            res.send(result);
+        })
+
+        app.get('/productCount',async (req,res)=>{
+            const count = await medicineCollection.estimatedDocumentCount();
+            res.send({count});
+        })
 
 
         // Send a ping to confirm a successful connection

@@ -107,20 +107,42 @@ async function run() {
 
         })
 
-        app.get('/allMedicines',async (req,res)=>{
+        // Getting individual element from a certain category
+
+        app.get('/UniqueCategory/:category', async (req, res) => {
+            const category = req.params.category;
+
+            try {
+
+                const results = await medicineCollection.find({
+                    category: category
+                }).toArray();
+
+                if (results.length === 0) {
+                    res.status(404).send('No documents found');
+                } else {
+                    res.json(results);
+                }
+            } catch (error) {
+                console.error('Error finding documents:', error);
+                res.status(500).send('Internal Server Error');
+            }
+        })
+
+        app.get('/allMedicines', async (req, res) => {
             const page = parseInt(req.query.page);
             const size = parseInt(req.query.size);
 
             const result = await medicineCollection.find()
-            .skip(page * size)
-            .limit(size)
-            .toArray();
+                .skip(page * size)
+                .limit(size)
+                .toArray();
             res.send(result);
         })
 
-        app.get('/productCount',async (req,res)=>{
+        app.get('/productCount', async (req, res) => {
             const count = await medicineCollection.estimatedDocumentCount();
-            res.send({count});
+            res.send({ count });
         })
 
 

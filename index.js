@@ -222,6 +222,29 @@ async function run() {
             }
         });
 
+        //delete a single cart item from the data base
+
+        app.delete('/cartInformation/:id', verifyToken, async (req, res) => {
+            const itemId = req.params.id;
+            try {
+                const result = await cartCollection.deleteOne({ _id: new ObjectId(itemId) });
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ success: false, message: 'An error occurred while deleting the item', error });
+            }
+        });
+
+        //deleting all the cart information from the mongodb
+
+        app.delete("/deleteAllCartInformation", verifyToken, async (req, res) => {
+            try {
+                const result = await cartCollection.deleteMany({});
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ success: false, message: 'An error occurred while deleting all items', error });
+            }
+        })
+
 
         // Getting individual element from a certain category
 

@@ -21,19 +21,25 @@ app.use(cookieParser())
 
 // Verify Token Middleware
 const verifyToken = async (req, res, next) => {
-    const token = req.cookies?.token
-    console.log(token)
-    if (!token) {
-        return res.status(401).send({ message: 'unauthorized access' })
-    }
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-        if (err) {
-            console.log(err)
-            return res.status(401).send({ message: 'unauthorized access' })
+    
+    if(!req.headers.authorization)
+        {
+            return res.status(401).send({message: 'forbidden access'});
         }
-        req.user = decoded
-        next()
-    })
+
+      const token = req.headers.authorization.split(' ')[1];
+      if(!token)
+        {
+            return res.status(401).send({message: 'forbidden access'});
+        }  
+
+        jwt.verify(token,process.env.ACCESS_TOKEN_SECRET,(err,decoded)=>{
+            if(err){
+                return res.status(401).send({message: 'forbidden access'})
+            }
+            req.decoded = decoded;
+            next();
+        })
 }
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.iz3dvmk.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -53,13 +59,7 @@ async function run() {
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
                 expiresIn: '365d',
             })
-            res
-                .cookie('token', token, {
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === 'production',
-                    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-                })
-                .send({ success: true })
+            res.send({ token })
         })
         // Logout
         app.get('/logout', async (req, res) => {
@@ -137,6 +137,19 @@ async function run() {
             const result = await usersCollection.updateOne(query, updateDoc, options)
             res.send(result)
         })
+
+        //getting discounted data
+        app.get('/discounted', async (req, res) => {
+            try {
+                const discountedProducts = await medicineCollection.find({ discountStatus: true }).toArray();
+
+                // Sending the filtered products as JSON response
+                res.json(discountedProducts);
+            } catch (error) {
+                console.error("Error fetching discounted products:", error);
+                res.status(500).json({ error: "Internal server error" });
+            }
+        });
 
         //Getting all the user info for admin only
 

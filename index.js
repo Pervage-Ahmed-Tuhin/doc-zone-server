@@ -147,6 +147,25 @@ async function run() {
 
         })
 
+
+
+        //getting booking collection based on user email
+
+        app.get('/bookingsCollection/:email', async (req, res) => {
+            const email = req.params.email;
+            console.log(`Request received for email: ${email}`); // Debug log
+
+            try {
+                const result = await bookingsCollection.find({ email }).toArray();
+                console.log(`Database result: ${JSON.stringify(result)}`); // Debug log
+                res.send(result);
+            } catch (error) {
+                console.error('Error fetching cart information:', error);
+                res.status(500).send({ message: 'Internal server error' });
+            }
+        });
+
+
         //Save user in data base
         app.put('/user', async (req, res) => {
             const user = req.body

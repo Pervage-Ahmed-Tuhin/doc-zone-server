@@ -79,6 +79,7 @@ async function run() {
         const medicineCollection = client.db('medzone').collection('medicine');
         const medicineCategory = client.db('medzone').collection('category');
         const usersCollection = client.db('medzone').collection('users')
+        const cartCollection = client.db('medzone').collection('cart')
 
         //This is the api for the banner and other components
 
@@ -165,6 +166,62 @@ async function run() {
             const result = await usersCollection.find().toArray()
             res.send(result)
         })
+
+
+        //Storing cart information to the database
+
+        app.post('/cartInformation', verifyToken, async (req, res) => {
+
+            const cartItem = req.body;
+            const result = await cartCollection.insertOne(cartItem);
+            res.send(result);
+
+        })
+
+        //updating the quantity of a single item in the cart 
+
+        app.patch('/cartInformation/:id', verifyToken, async (req, res) => {
+            try {
+                const itemId = req.params.id; // Get the id of the cart item to update
+                const { quantity } = req.body; // Extract the quantity from the request body
+
+                // Check if quantity is a valid number
+                if (typeof quantity !== 'number' || quantity <= 0) {
+                    return res.status(400).json({ error: 'Quantity must be a positive number.' });
+                }
+
+                // Update the cart item in the database
+                const result = await cartCollection.updateOne(
+                    { _id: new ObjectId(itemId) }, // Find the cart item by its ID
+                    { $set: { quantity: quantity } } // Update the quantity field
+                );
+
+                res.send(result);
+            } catch (error) {
+                console.error('Error updating cart item:', error);
+                res.status(500).json({ error: 'Internal server error.' });
+            }
+        });
+
+        //getting cart information using email for specific user
+
+        app.get('/cartInformation/:email', verifyToken, async (req, res) => {
+            const email = req.params.email;
+            const decodedEmail = req.decoded.email; // Get email from decoded token
+
+            if (email !== decodedEmail) {
+                return res.status(403).send({ message: 'unauthorized access' });
+            }
+
+            try {
+                const result = await cartCollection.find({ email }).toArray(); // Changed findOne to find to return array of cart items
+                res.send(result);
+            } catch (error) {
+                console.error('Error fetching cart information:', error);
+                res.status(500).send({ message: 'Internal server error' });
+            }
+        });
+
 
         // Getting individual element from a certain category
 

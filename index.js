@@ -21,25 +21,24 @@ app.use(cookieParser())
 
 // Verify Token Middleware
 const verifyToken = async (req, res, next) => {
-    
-    if(!req.headers.authorization)
-        {
-            return res.status(401).send({message: 'forbidden access'});
+
+    console.log('inside the verify token ', req.headers);
+    if (!req.headers.authorization) {
+        return res.status(401).send({ message: 'forbidden access' });
+    }
+
+    const token = req.headers.authorization.split(' ')[1];
+    if (!token) {
+        return res.status(401).send({ message: 'forbidden access' });
+    }
+
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(401).send({ message: 'forbidden access' })
         }
-
-      const token = req.headers.authorization.split(' ')[1];
-      if(!token)
-        {
-            return res.status(401).send({message: 'forbidden access'});
-        }  
-
-        jwt.verify(token,process.env.ACCESS_TOKEN_SECRET,(err,decoded)=>{
-            if(err){
-                return res.status(401).send({message: 'forbidden access'})
-            }
-            req.decoded = decoded;
-            next();
-        })
+        req.decoded = decoded;
+        next();
+    })
 }
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.iz3dvmk.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -136,6 +135,14 @@ async function run() {
             }
             const result = await usersCollection.updateOne(query, updateDoc, options)
             res.send(result)
+        })
+
+        //get a user info from the database
+
+        app.get('/user/:email', verifyToken, async (req, res) => {
+            const email = req.params.email;
+            const result = await usersCollection.findOne({ email })
+            res.send(result);
         })
 
         //getting discounted data

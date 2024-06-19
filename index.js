@@ -5,12 +5,12 @@ const cors = require('cors')
 const cookieParser = require('cookie-parser')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 const jwt = require('jsonwebtoken')
-
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 const port = process.env.PORT || 5000
 
 // middleware
 const corsOptions = {
-    origin: ['http://localhost:5173', 'http://localhost:5174'],
+    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
     credentials: true,
     optionSuccessStatus: 200,
 }
@@ -80,8 +80,48 @@ async function run() {
         const medicineCategory = client.db('medzone').collection('category');
         const usersCollection = client.db('medzone').collection('users')
         const cartCollection = client.db('medzone').collection('cart')
+        const bookingsCollection = client.db('medzone').collection('booking')
+
+
+        //payment intent
+
+        app.post('/create-payment-intent', verifyToken, async (req, res) => {
+            const price = req.body.price
+            const priceInCent = parseFloat(price) * 100
+            if (!price || priceInCent < 1) return
+            // generate clientSecret
+            const { client_secret } = await stripe.paymentIntents.create({
+                amount: priceInCent,
+                currency: 'usd',
+                // In the latest version of the API, specifying the `automatic_payment_methods` parameter is optional because Stripe enables its functionality by default.
+                automatic_payment_methods: {
+                    enabled: true,
+                },
+            })
+            // send client secret as response
+            res.send({ clientSecret: client_secret })
+        })
+
+        //save booking data to the database
+
+        app.post('/booking', verifyToken, async (req, res) => {
+            try {
+                const bookingData = req.body;
+                const result = await bookingsCollection.insertOne(bookingData);
+                // Send response back to the client
+                res.send(result);
+            } catch (error) {
+                console.error('Error saving booking:', error);
+                res.status(500).json({ success: false, message: 'Internal Server Error' });
+            }
+        });
+
+
+
 
         //This is the api for the banner and other components
+
+
 
         app.get('/medicine', async (req, res) => {
             try {

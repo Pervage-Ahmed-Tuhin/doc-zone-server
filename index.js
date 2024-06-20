@@ -336,10 +336,31 @@ async function run() {
             }
         });
 
+        //get the payment history for a specific user 
+
+        app.get('/getSingleBookingInfo/:email', verifyToken, async (req, res) => {
+            const email = req.params.email;
+            const decodedEmail = req.decoded.email; // Get email from decoded token
+
+            if (email !== decodedEmail) {
+                return res.status(403).send({ message: 'unauthorized access' });
+            }
+
+            try {
+                const result = await bookingsCollection.find({ email }).toArray(); // Changed findOne to find to return array of cart items
+                res.send(result);
+            } catch (error) {
+                console.error('Error fetching cart information:', error);
+                res.status(500).send({ message: 'Internal server error' });
+            }
+
+
+        })
+
 
         //getting booking collection based on user email
 
-        app.get('/bookingsCollection/:email', async (req, res) => {
+        app.get('/bookingsCollection/:email', verifyToken, async (req, res) => {
             const email = req.params.email;
             console.log(`Request received for email: ${email}`); // Debug log
 

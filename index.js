@@ -41,6 +41,8 @@ const verifyToken = async (req, res, next) => {
     })
 }
 
+
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.iz3dvmk.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 const client = new MongoClient(uri, {
     serverApi: {
@@ -81,6 +83,69 @@ async function run() {
         const usersCollection = client.db('medzone').collection('users')
         const cartCollection = client.db('medzone').collection('cart')
         const bookingsCollection = client.db('medzone').collection('booking')
+
+
+
+        const verifyAdmin = async (req, res, next) => {
+            console.log('hello')
+            const user = req.decoded
+            const query = { email: user?.email }
+            const result = await usersCollection.findOne(query)
+            console.log(result?.role)
+            if (!result || result?.role !== 'admin')
+                return res.status(401).send({ message: 'unauthorized access!!' })
+
+            next()
+        }
+
+
+        // verify seller middleware
+        const verifySeller = async (req, res, next) => {
+            console.log('hello')
+            const user = req.decoded
+            const query = { email: user?.email }
+            const result = await usersCollection.findOne(query)
+            console.log(result?.role)
+            if (!result || result?.role !== 'seller') {
+                return res.status(401).send({ message: 'unauthorized access!!' })
+            }
+
+            next()
+        }
+
+
+        //update a users role by admin route
+
+        app.patch('/users/:email', verifyToken, verifyAdmin, async (req, res) => {
+            const email = req.params.email;
+            const { role } = req.body;
+
+            
+            const validRoles = ['user', 'seller', 'admin'];
+            if (!validRoles.includes(role)) {
+                return res.status(400).send({ message: 'Invalid role' });
+            }
+
+            try {
+                const result = await usersCollection.updateOne(
+                    { email: email },
+                    { $set: { role: role } }
+                );
+
+                if (result.matchedCount === 0) {
+                    return res.status(404).send({ message: 'User not found' });
+                }
+
+                res.send({ message: 'Role updated successfully' });
+            } catch (error) {
+                console.error('Error updating user role:', error);
+                res.status(500).send({ message: 'Internal server error' });
+            }
+        });
+
+
+
+
 
 
         //payment intent
@@ -221,7 +286,7 @@ async function run() {
         //Getting all the user info for admin only
 
         // get all users data from db
-        app.get('/users', async (req, res) => {
+        app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
             const result = await usersCollection.find().toArray()
             res.send(result)
         })

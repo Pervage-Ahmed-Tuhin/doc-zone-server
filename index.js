@@ -120,7 +120,7 @@ async function run() {
             const email = req.params.email;
             const { role } = req.body;
 
-            
+
             const validRoles = ['user', 'seller', 'admin'];
             if (!validRoles.includes(role)) {
                 return res.status(400).send({ message: 'Invalid role' });
@@ -212,7 +212,53 @@ async function run() {
 
         })
 
+        app.post('/category', async (req, res) => {
+            try {
+                const newCategory = req.body;
+                console.log(newCategory);
+                const result = await medicineCategory.insertOne(newCategory);
+                res.json(result);
+            } catch (error) {
+                console.error(error);
+                res.status(500).json({ message: 'Internal server error' });
+            }
+        })
 
+        app.delete('/category/:categoryId', async (req, res) => {
+            const id = req.params.categoryId;
+            const query = { _id: new ObjectId(id) };
+            const result = await medicineCategory.deleteOne(query);
+            res.send(result);
+        })
+
+
+
+        // Update a category
+        app.put('/category/:categoryId', verifyToken, verifyAdmin, async (req, res) => {
+            const { categoryId } = req.params;
+            const { category, image_url } = req.body;
+
+            const filter = { _id: new ObjectId(categoryId) };
+            const update = {
+                $set: {
+                    category,
+                    image_url
+                }
+            };
+
+            try {
+                const updatedCategory = await medicineCategory.findOneAndUpdate(filter, update, { new: true });
+
+                if (!updatedCategory) {
+                    return res.status(404).json({ error: 'Category not found' });
+                }
+
+                res.json(updatedCategory);
+            } catch (error) {
+                console.error('Error updating category:', error);
+                res.status(500).json({ error: 'Internal server error' });
+            }
+        });
 
         //getting booking collection based on user email
 

@@ -298,6 +298,45 @@ async function run() {
             }
         })
 
+        //getting all booking collection information for the admin
+
+        app.get('/getAllBooking', verifyToken, verifyAdmin, async (req, res) => {
+            try {
+                const bookingInformation = await bookingsCollection.find().toArray();
+                res.send(bookingInformation);
+            } catch (error) {
+                console.error("Error fetching featured medicines:", error);
+                res.status(500).json({ error: "Internal server error" });
+            }
+        })
+
+        //updating the payment status 
+
+        app.patch('/updatePaymentStatus/:id', verifyToken, verifyAdmin, async (req, res) => {
+            const { id } = req.params;
+            const { paymentStatus } = req.body;
+
+
+
+
+            try {
+                const result = await bookingsCollection.updateOne(
+                    { _id: new ObjectId(id) },
+                    { $set: { paymentStatus: paymentStatus } }
+                );
+
+                if (result.matchedCount === 0) {
+                    return res.status(404).send({ message: 'User not found' });
+                }
+
+                res.send({ message: 'Role updated successfully' });
+            } catch (error) {
+                console.error('Error updating user role:', error);
+                res.status(500).send({ message: 'Internal server error' });
+            }
+        });
+
+
         //getting booking collection based on user email
 
         app.get('/bookingsCollection/:email', async (req, res) => {

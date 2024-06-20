@@ -83,6 +83,7 @@ async function run() {
         const usersCollection = client.db('medzone').collection('users')
         const cartCollection = client.db('medzone').collection('cart')
         const bookingsCollection = client.db('medzone').collection('booking')
+        const bannerCollection = client.db('medzone').collection('banner')
 
 
 
@@ -259,6 +260,43 @@ async function run() {
                 res.status(500).json({ error: 'Internal server error' });
             }
         });
+
+
+        //Adding slider items by the admin route
+
+        app.post('/addToSlider', verifyToken, verifyAdmin, async (req, res) => {
+            try {
+                const bannerItem = req.body;
+                console.log(bannerItem);
+                const result = await bannerCollection.insertOne(bannerItem);
+                res.send(result);
+            } catch (error) {
+                console.error(error);
+                res.status(500).json({ message: 'Internal server error' });
+            }
+        })
+
+        //deleting from the banner collection 
+        app.delete('/removeFromSlider', verifyToken, verifyAdmin, async (req, res) => {
+            const { productName } = req.query;
+            console.log(productName);
+            const query = { name: productName };
+            const result = await bannerCollection.deleteOne(query);
+            res.send(result);
+        });
+
+
+        //getting data for the banner to show it 
+
+        app.get('/bannerData', async (req, res) => {
+            try {
+                const featuredMedicines = await bannerCollection.find().toArray();
+                res.send(featuredMedicines);
+            } catch (error) {
+                console.error("Error fetching featured medicines:", error);
+                res.status(500).json({ error: "Internal server error" });
+            }
+        })
 
         //getting booking collection based on user email
 

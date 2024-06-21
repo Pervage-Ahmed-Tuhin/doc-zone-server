@@ -263,6 +263,34 @@ async function run() {
             }
         });
 
+        //getting the seller purchase history
+
+        // In your Express.js server file
+        app.get('/seller/purchase-history/:email', verifyToken, verifySeller, async (req, res) => {
+            const email = req.params.email;
+            const decodedEmail = req.decoded.email; // Get email from decoded token
+
+            if (email !== decodedEmail) {
+                return res.status(403).send({ message: 'unauthorized access' });
+            }
+
+            try {
+                // Fetch all bookings from the bookings collection
+                const bookings = await bookingsCollection.find({}).toArray();
+
+                // Filter bookings to only include those that contain items sold by the seller
+                const sellerBookings = bookings.filter(booking =>
+                    booking.cartData.some(item => item.sellerEmail === email)
+                );
+
+                res.send(sellerBookings);
+            } catch (error) {
+                console.error('Error fetching purchase history:', error);
+                res.status(500).send({ message: 'Internal server error' });
+            }
+        });
+
+
 
 
         // getting individual category

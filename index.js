@@ -231,6 +231,40 @@ async function run() {
 
 
 
+        //getting the sales status and revenue for a single seller
+        app.get('/seller/revenue/:email', verifyToken, verifySeller, async (req, res) => {
+            const sellerEmail = req.params.email;
+
+            try {
+                const revenueData = await bookingsCollection.aggregate([
+                    { $unwind: "$cartData" },
+                    { $match: { "cartData.sellerEmail": sellerEmail } },
+                    {
+                        $group: {
+                            _id: null,
+                            totalRevenue: {
+                                $sum: {
+                                    $cond: [{ $eq: ["$paymentStatus", "paid"] }, { $multiply: ["$cartData.price", "$cartData.quantity"] }, 0]
+                                }
+                            },
+                            pendingTotal: {
+                                $sum: {
+                                    $cond: [{ $eq: ["$paymentStatus", "pending"] }, { $multiply: ["$cartData.price", "$cartData.quantity"] }, 0]
+                                }
+                            }
+                        }
+                    }
+                ]).toArray();
+
+                res.send(revenueData.length > 0 ? revenueData[0] : { totalRevenue: 0, pendingTotal: 0 });
+            } catch (error) {
+                console.error('Error fetching revenue data:', error);
+                res.status(500).send({ message: 'Internal server error' });
+            }
+        });
+
+
+
         // getting individual category
 
         app.get('/category', async (req, res) => {

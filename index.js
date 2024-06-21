@@ -292,6 +292,59 @@ async function run() {
 
 
 
+        //getting the advertise data for the banner for a seller
+
+        app.get('/bannerData/:email', verifyToken, verifySeller, async (req, res) => {
+            const email = req.params.email;
+            const decodedEmail = req.decoded.email; // Get email from decoded token
+
+            if (email !== decodedEmail) {
+                return res.status(403).send({ message: 'unauthorized access' });
+            }
+
+
+            try {
+                const result = await bannerCollection.find({ sellerEmail: email }).toArray(); // Filter by sellerEmail
+                res.send(result);
+            } catch (error) {
+                console.error('Error fetching medicine information:', error);
+                res.status(500).send({ message: 'Internal server error' });
+            }
+        })
+
+
+        //adding new advertise for the banner item
+        app.put('/updateProduct/:productName', verifyToken, verifySeller, async (req, res) => {
+            const name = req.params.productName;
+            console.log('Product Name:', name);
+
+            try {
+                const filter = { name: name };
+                const pop = req.body;
+
+                console.log('Update Data:', pop);
+
+                const updateDoc = {
+                    $set: {
+                        description: pop.description,
+                        image_url: pop.image_url,
+                    }
+                };
+
+                const result = await bannerCollection.updateOne(filter, updateDoc);
+                console.log('Update Result:', result);
+
+                if (result.modifiedCount === 0) {
+                    return res.status(404).json({ message: 'Product not found or no changes made' });
+                }
+
+                res.send(result);
+            } catch (error) {
+                console.error('Error updating product:', error);
+                res.status(500).json({ message: 'Internal server error' });
+            }
+        });
+
 
         // getting individual category
 

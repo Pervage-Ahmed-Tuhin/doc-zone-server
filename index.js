@@ -199,6 +199,38 @@ async function run() {
             }
         });
 
+        //getting the medicine for a specific seller 
+        app.get('/medicine/:email', verifyToken, verifySeller, async (req, res) => {
+            const email = req.params.email;
+            const decodedEmail = req.decoded.email; // Get email from decoded token
+
+            if (email !== decodedEmail) {
+                return res.status(403).send({ message: 'unauthorized access' });
+            }
+
+            try {
+                const result = await medicineCollection.find({ sellerEmail: email }).toArray(); // Filter by sellerEmail
+                res.send(result);
+            } catch (error) {
+                console.error('Error fetching medicine information:', error);
+                res.status(500).send({ message: 'Internal server error' });
+            }
+        });
+
+        //posting a medicine added by a seller
+        app.post('/medicine', verifyToken, verifySeller, async (req, res) => {
+            try {
+                const newMedicine = req.body;
+                const result = await medicineCollection.insertOne(newMedicine);
+                res.send(result);
+            } catch (error) {
+                console.error('Error adding new medicine:', error);
+                res.status(500).send({ message: 'Internal server error' });
+            }
+        });
+
+
+
         // getting individual category
 
         app.get('/category', async (req, res) => {
@@ -335,6 +367,11 @@ async function run() {
                 res.status(500).send({ message: 'Internal server error' });
             }
         });
+
+
+
+
+
 
         //get the payment history for a specific user 
 
